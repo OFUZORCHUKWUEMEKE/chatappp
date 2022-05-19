@@ -22,25 +22,25 @@ const registerUser = asyncHandler(async (req,res)=>{
         name,email,password:hashedPassword,pic
     })
     if(user){
-    //     return res.status(201).json({
-    //         _id:user._id,
-    //         name:user.name,
-    //         email:user.email,
-    //         pic:user.pic,
-    //         token:generateToken(user._id)
-    //   })
+        return res.status(201).json({
+            _id:user._id,
+            name:user.name,
+            email:user.email,
+            pic:user.pic,
+            token:generateToken(user._id)
+      })
     return res.status(201).json(user)
    }else{
        res.status(400);
        throw new Error('failed to Create the User') 
-   }
+   }  
 }) 
 
 const authUser = asyncHandler(async(req,res)=>{
     const {email,password} = req.body
 
     const user = await User.findOne({email})
-    const isPassword = bcrypt.compare(password,user.password)
+    const isPassword = await bcrypt.compare(password,user.password)
 
     if(!isPassword){
         throw new Error('Invalid Email or Password')
@@ -55,4 +55,22 @@ const authUser = asyncHandler(async(req,res)=>{
     }
 })
 
-module.exports = {registerUser,authUser};
+const allUsers = asyncHandler(async(req,res)=>{
+     const keyword = req.query.search ?
+     {
+         $or:[
+             {
+                 name:{$regex:req.query.search,$options:"i"}           
+             },
+             {
+                email:{$regex:req.query.search,$options:"i"}           
+            }
+
+         ]
+     } :{}
+     const users = await User.find(keyword).find({_id:{$ne:req.user._id}})
+     res.send(users)
+
+})
+
+module.exports = {registerUser,authUser,allUsers};
